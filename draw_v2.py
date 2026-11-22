@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""Draw v2 of the entry image: a dense, high-impact front page that sums
+up Sunday 22 November 2026's world news in one 1024x1024 image.
+
+31 dated stories, each reported that day (sources: Reuters, AP, BBC,
+Al Jazeera, The Guardian, One Turn's day report). Output:
+news-2026-11-22-v2.png (<= 1024x1024, <= 1 MiB).
+"""
+from PIL import Image, ImageDraw, ImageFont
+
+W = H = 1024
+FONT_DIR = "/usr/share/fonts/truetype/noto"
+BLACK = f"{FONT_DIR}/NotoSans-Black.ttf"
+XBOLD = f"{FONT_DIR}/NotoSans-ExtraBold.ttf"
+BOLD = f"{FONT_DIR}/NotoSans-Bold.ttf"
+SEMI = f"{FONT_DIR}/NotoSans-SemiBold.ttf"
+REG = f"{FONT_DIR}/NotoSans-Regular.ttf"
+
+BG = (8, 10, 16)
+PANEL = (17, 21, 32)
+PANEL2 = (23, 29, 44)
+WHITE = (246, 248, 251)
+MUTED = (165, 176, 196)
+RED = (235, 47, 66)
+GOLD = (247, 183, 49)
+TEAL = (45, 196, 182)
+BLUE = (92, 156, 255)
+GREEN = (96, 199, 110)
+PURPLE = (178, 132, 255)
+ORANGE = (255, 145, 66)
+
+
+def F(path, size):
+    return ImageFont.truetype(path, size)
+
+
+def wrap(draw, text, fnt, max_w):
+    words, lines, cur = text.split(), [], ""
+    for w in words:
+        trial = (cur + " " + w).strip()
+        if draw.textlength(trial, font=fnt) <= max_w:
+            cur = trial
+        else:
+            if cur:
+                lines.append(cur)
+            cur = w
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def text_block(draw, xy, text, fnt, fill, max_w, leading=1.18, max_lines=None):
+    x, y = xy
+    lines = wrap(draw, text, fnt, max_w)
+    if max_lines:
+        lines = lines[:max_lines]
+    lh = int(fnt.size * leading)
+    for ln in lines:
+        draw.text((x, y), ln, font=fnt, fill=fill)
+        y += lh
+    return y
+
+
+img = Image.new("RGB", (W, H), BG)
+d = ImageDraw.Draw(img)
+M = 26  # margin
+
+# ---------- masthead ----------
+d.text((M, 14), "THE WORLD IN ONE DAY", font=F(BLACK, 57), fill=WHITE)
+d.rectangle([M, 84, W - M, 88], fill=RED)
+d.text((M, 94), "SUNDAY, 22 NOVEMBER 2026", font=F(XBOLD, 21), fill=GOLD)
+r = "31 STORIES • EVERY REGION • ONE PAGE"
+d.text((W - M - d.textlength(r, font=F(XBOLD, 21)), 94), r, font=F(XBOLD, 21), fill=WHITE)
+
+# ---------- hero row ----------
+HY = 128
+d.rectangle([M, HY, 640, 356], fill=PANEL2)
+d.rectangle([M, HY, 640, HY + 6], fill=RED)
+d.text((M + 18, HY + 16), "CLIMATE • ANTALYA, TÜRKIYE", font=F(BOLD, 15), fill=RED)
+d.text((M + 18, HY + 40), "COP31", font=F(BLACK, 62), fill=WHITE)
+d.text((M + 18, HY + 106), "COLLAPSES", font=F(BLACK, 62), fill=RED)
+text_block(d, (M + 18, HY + 178),
+           "The climate summit ends with NO DEAL — the first collapse since 2009 — "
+           "after the EU, UK and Panama reject a final draft that never once "
+           "mentions fossil fuels.",
+           F(SEMI, 15.5), MUTED, 576, max_lines=4)
+
+def hero_card(y, tag, color, head, body):
+    d.rectangle([656, y, W - M, y + 110], fill=PANEL)
+    d.rectangle([656, y, 660, y + 110], fill=color)
+    d.text((672, y + 10), tag, font=F(BOLD, 13), fill=color)
+    text_block(d, (672, y + 30), head, F(XBOLD, 21), WHITE, 306, leading=1.1, max_lines=2)
+    text_block(d, (672, y + 76), body, F(REG, 12.5), MUTED, 306, leading=1.15, max_lines=2)
+
+hero_card(HY, "WAR • BAHRAIN", RED, "IRAN STRIKES BAHRAIN",
+          "Missiles hit US bases and a Sitra plant; 2 hurt. Iran claims 2 Patriot radars destroyed.")
+hero_card(HY + 118, "WAR • UKRAINE", GOLD, "FLATS HIT NEAR KYIV",
+          "Drone collapses a Dymer block: 2 dead, 14 missing. Barrage: 400+ drones, 110 missiles.")
+
+# ---------- story grid ----------
+GRID = [
+    ("BALTIC", BLUE, "RUSSIAN SHIP ABLAZE",
+     "Cargo ship Sparta II burns in the Gulf of Finland after a drone strike; blast hits a corvette in Libya."),
+    ("SHENZHEN", PURPLE, "TRUMP–XI–PUTIN SUMMIT",
+     "First-ever trilateral meeting issues a joint declaration on nuclear risks; no Ukraine breakthrough."),
+    ("MARKETS", RED, "STOCKS SLIDE 3.7%",
+     "S&P 500 falls into correction as the AI sell-off deepens; Nvidia's worst weekly losing run since 2008."),
+    ("THE HAGUE", TEAL, "MYANMAR: GENOCIDE",
+     "The World Court rules Myanmar committed genocide against the Rohingya people."),
+    ("WEST BANK", ORANGE, "SETTLERS TORCH CARS",
+     "12 Palestinian vehicles burned in four villages near Ramallah; Israel opens an inquiry."),
+    ("SUDAN", RED, "DRONES HIT KHARTOUM",
+     "Strikes damage a UN compound in the capital; four people killed."),
+    ("GAZA", ORANGE, "STRIKES GO ON",
+     "Israeli strikes kill across Gaza; three die in a strike on a food truck near Deir al-Balah."),
+    ("MEXICO", GREEN, "'CHAPO ISIDRO' TAKEN",
+     "Special forces capture the FBI-listed cartel boss in Sinaloa; 11 killed in clashes."),
+    ("SPACE", BLUE, "MERCURY, AT LAST",
+     "BepiColombo enters orbit around Mercury after an eight-year journey from Earth."),
+    ("INDONESIA", RED, "FACTORY FIRE",
+     "Candy factory blaze in Banten kills 3; about 33 workers still missing."),
+    ("TRADE", TEAL, "EU–INDONESIA DEAL",
+     "Trade pact signed after 10 years of talks; 98.5% of EU tariffs go; 730M people covered."),
+    ("GENEVA", PURPLE, "NO KILLER-ROBOT RULES",
+     "UN talks on AI weapons end without binding rules; the Red Cross warns time is running out."),
+]
+GX, GY = M, 372
+CW, CH, GAP = 237, 104, 8
+for i, (tag, color, head, body) in enumerate(GRID):
+    cx = GX + (i % 4) * (CW + GAP)
+    cy = GY + (i // 4) * (CH + GAP)
+    d.rectangle([cx, cy, cx + CW, cy + CH], fill=PANEL)
+    d.rectangle([cx, cy, cx + CW, cy + 4], fill=color)
+    d.text((cx + 10, cy + 10), tag, font=F(BOLD, 11), fill=color)
+    text_block(d, (cx + 10, cy + 27), head, F(XBOLD, 15.5), WHITE, CW - 20, leading=1.08, max_lines=2)
+    text_block(d, (cx + 10, cy + 62), body, F(REG, 11.5), MUTED, CW - 20, leading=1.14, max_lines=3)
+
+# ---------- more of the day ----------
+LY = 706
+d.text((M, LY), "MORE OF THE DAY", font=F(XBOLD, 19), fill=GOLD)
+d.rectangle([M, LY + 28, W - M, LY + 30], fill=GOLD)
+MORE_L = [
+    "AI 'proves' the Riemann hypothesis — experts start checking",
+    "One-shot CRISPR therapy cuts bad cholesterol by 52%",
+    "Denmark expels Russian attaché over alleged murder plot",
+    "Funeral boat capsizes in Nigeria: 24 dead",
+    "Basra power-station fire kills 4, injures 30",
+    "Korea's education minister quits over AI cheating scandal",
+    "Princess Kate says she is in remission from cancer",
+]
+MORE_R = [
+    "Saudi Arabia to triple oil stored in Japan to 24M barrels",
+    "Sixth weekend of cost-of-living protests across France",
+    "Man convicted of starting 2025 Palisades fire (12 died)",
+    "Argentina approves a $50 billion LNG export project",
+    "FBI probes hack of its national crime database",
+    "Turkey seizes last big independent TV channel; protests",
+    "Hong Kong votes in Legislative Council election",
+]
+def more_list(x, items, y0):
+    y = y0
+    for it in items:
+        d.rectangle([x, y + 5, x + 7, y + 12], fill=RED)
+        text_block(d, (x + 15, y), it, F(SEMI, 13.5), WHITE, 452, leading=1.12, max_lines=2)
+        y += 31
+    return y
+more_list(M, MORE_L, LY + 40)
+more_list(518, MORE_R, LY + 40)
+
+# ---------- footer ----------
+FY = 968
+d.rectangle([M, FY, W - M, FY + 30], fill=GOLD)
+sport = "SPORT — VERSTAPPEN WINS LAS VEGAS BY 0.639s • INDIA DECLARE AT 720/9 (PANT 128)"
+d.text((M + 12, FY + 5), sport, font=F(XBOLD, 15.5), fill=(10, 10, 10))
+src = "Sources: Reuters • AP • BBC • Al Jazeera • The Guardian • formula1.com — all stories dated 22 Nov 2026"
+d.text((M, FY + 36), src, font=F(REG, 11), fill=MUTED)
+
+img.save("/home/hatch/workspace/makefun/news-image-20261122/news-2026-11-22-v2.png", optimize=True)
+import os
+p = "/home/hatch/workspace/makefun/news-image-20261122/news-2026-11-22-v2.png"
+print("saved", os.path.getsize(p), "bytes")
