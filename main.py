@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Sum up 22 November 2026's world news in one image.
 
-The entry image (news-2026-11-22-v3.png, a dense 1024x1024 front page
-with 42 dated stories, drawn by draw_v3.py for this bounty) is stored in
-this repository. This program hands it to the grader: it copies the
+The entry image (news-2026-11-22-v4.png, a classic newspaper-style
+1024x1024 front page with 45 dated stories by region plus a reader
+poll, drawn by draw_v4.py for this bounty) is stored in this
+repository. This program hands it to the grader: it copies the
 image to the output directory as entry.png, using only the Python
 standard library so it runs anywhere.
 
@@ -15,7 +16,7 @@ import shutil
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SOURCE = os.path.join(HERE, "news-2026-11-22-v3.png")
+SOURCE = os.path.join(HERE, "news-2026-11-22-v4.png")
 
 
 def main() -> int:
